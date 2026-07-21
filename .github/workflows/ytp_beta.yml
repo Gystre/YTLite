@@ -85,7 +85,7 @@ jobs:
       - name: Hide sensitive inputs
         uses: levibostian/action-hide-sensitive-inputs@v1
         with:
-          exclude_inputs: bundle_id,display_name,enable_demc,enable_ryd,enable_youpip,enable_yq,enable_ytuhd,info_note
+          exclude_inputs: bundle_id,display_name,enable_demc,enable_ryd,enable_youpip,enable_yq,enable_ytuhd,info_note,ipa_url,tweak_url
 
       - name: Download and validate IPA
         id: validate_ipa
@@ -323,7 +323,9 @@ jobs:
         with:
           tag_name: ytp-beta-${{ github.run_number }}
           name: YouTubePlus Beta (${{ github.run_number }})
-          files: YouTubePlus_Beta_YT${{ steps.validate_ipa.outputs.yt_version }}.ipa
+          files: |
+            YouTubePlus_Beta_YT${{ steps.validate_ipa.outputs.yt_version }}.ipa
+            youtube.ipa
           draft: true
           body: |
             **YouTube Version:** ${{ steps.validate_ipa.outputs.yt_version }}
