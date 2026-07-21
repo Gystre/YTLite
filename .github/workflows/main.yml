@@ -88,6 +88,7 @@ jobs:
           exclude_inputs: bundle_id,display_name,enable_demc,enable_ryd,enable_youpip,enable_yq,enable_ytuhd,info_note,tweak_version
 
       - name: Download and validate IPA
+        id: validate_ipa
         run: |
           wget "${{ inputs.ipa_url }}" --no-verbose -O ${{ github.workspace }}/youtube.ipa
 
@@ -97,6 +98,11 @@ jobs:
             echo "::error::Validation failed: The downloaded file is not a valid IPA. Detected type: $file_type."
             exit 1
           fi
+
+          unzip -q youtube.ipa -d ipa_extract
+          yt_version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" ipa_extract/Payload/*.app/Info.plist)
+          echo "yt_version=$yt_version" >> $GITHUB_OUTPUT
+          rm -rf ipa_extract
 
       - name: Install Dependencies
         run: brew install make ldid
@@ -305,16 +311,21 @@ jobs:
             fi
           done
 
-          cyan -i youtube.ipa -o YouTubePlus_${{ inputs.tweak_version }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
+          cyan -i youtube.ipa -o YouTubePlus_${{ inputs.tweak_version }}_YT${{ steps.validate_ipa.outputs.yt_version }}.ipa -uwef $tweaks -n "${{ inputs.display_name }}" -b ${{ inputs.bundle_id }}
 
       - name: Upload to GitHub Releases
         uses: softprops/action-gh-release@v2.0.1
         with:
           tag_name: ytp-${{ github.run_number }}
           name: YouTubePlus v${{ inputs.tweak_version }} (${{ github.run_number }})
-          files: YouTubePlus_${{ inputs.tweak_version }}.ipa
+          files: YouTubePlus_${{ inputs.tweak_version }}_YT${{ steps.validate_ipa.outputs.yt_version }}.ipa
           draft: true
+          body: |
+            **YouTube Version:** ${{ steps.validate_ipa.outputs.yt_version }}
+            **IPA Source:** ${{ inputs.ipa_url }}
 
       - name: Output Release URL
         run: |
+          echo "::notice::YouTube IPA version: ${{ steps.validate_ipa.outputs.yt_version }}"
+          echo "::notice::IPA source URL: ${{ inputs.ipa_url }}"
           echo "::notice::Release available at: https://github.com/${{ github.repository }}/releases"
